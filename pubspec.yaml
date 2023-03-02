@@ -1,0 +1,20 @@
+name: scrollable_index_gridview
+description: A flutter GridView that allows programmatically scroll to a specific index of item in the GridView.
+version: 0.0.1
+homepage: https://github.com/badshah-badmas/flutter_scrollable_index_gridview
+
+environment:
+  sdk: '>=2.18.6 <3.0.0'
+  flutter: ">=1.17.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.1
+
+
+flutter:
