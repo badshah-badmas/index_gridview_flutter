@@ -1,33 +1,34 @@
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/scheduler.dart';
 
 class ScrollableIndexGridView extends StatefulWidget {
-  const ScrollableIndexGridView.builder(
-      {super.key,
-      required this.itemBuilder,
-      required this.gridDelegate,
-      required this.itemCount,
-      this.addAutomaticKeepAlives = true,
-      this.addRepaintBoundaries = true,
-      this.addSemanticIndexes = true,
-      this.cacheExtent,
-      this.clipBehavior = Clip.hardEdge,
-      this.controller,
-      this.dragStartBehavior = DragStartBehavior.start,
-      this.findChildIndexCallback,
-      this.keyboardDismissBehavior = ScrollViewKeyboardDismissBehavior.manual,
-      this.padding,
-      this.physics,
-      this.primary,
-      this.restorationId,
-      this.reverse = false,
-      this.scrollDirection = Axis.vertical,
-      this.semanticChildCount,
-      this.shrinkWrap = false});
+  const ScrollableIndexGridView.builder({
+    super.key,
+    required this.itemBuilder,
+    required this.itemCount,
+    required this.childAspectRatio,
+    required this.crossAxisCount,
+    this.addAutomaticKeepAlives = true,
+    this.addRepaintBoundaries = true,
+    this.addSemanticIndexes = true,
+    this.cacheExtent,
+    this.clipBehavior = Clip.hardEdge,
+    this.controller,
+    this.dragStartBehavior = DragStartBehavior.start,
+    this.findChildIndexCallback,
+    this.keyboardDismissBehavior = ScrollViewKeyboardDismissBehavior.manual,
+    this.padding,
+    this.physics,
+    this.primary,
+    this.restorationId,
+    this.reverse = false,
+    this.scrollDirection = Axis.vertical,
+    this.semanticChildCount,
+    this.shrinkWrap = false,
+    this.scrollStartFromIndex,
+  });
   final Widget Function(BuildContext, int) itemBuilder;
-  final SliverGridDelegate gridDelegate;
   final DragStartBehavior dragStartBehavior;
   final Axis scrollDirection;
   final Clip clipBehavior;
@@ -46,6 +47,9 @@ class ScrollableIndexGridView extends StatefulWidget {
   final int? semanticChildCount;
   final int? Function(Key)? findChildIndexCallback;
   final ScrollViewKeyboardDismissBehavior keyboardDismissBehavior;
+  final double childAspectRatio;
+  final int crossAxisCount;
+  final int? scrollStartFromIndex;
 
   @override
   State<ScrollableIndexGridView> createState() =>
@@ -97,7 +101,6 @@ class _ScrollableIndexGridViewState extends State<ScrollableIndexGridView>
     Curve curve = Curves.linear,
     required List<double> opacityAnimationWeights,
   }) async {
- 
     if (_childHeight == 0) {
       final RenderBox? renderBox =
           _childHeightKey.currentContext?.findRenderObject() as RenderBox?;
@@ -105,8 +108,13 @@ class _ScrollableIndexGridViewState extends State<ScrollableIndexGridView>
       _childHeight = (renderBox?.size.height ?? _childHeight);
     }
     _isScrolling = true;
-    await _scrollController.animateTo(index * _childHeight,
-        duration: duration, curve: curve);
+
+    await _scrollController.animateTo(
+        ((index ~/ widget.crossAxisCount) -
+                (widget.scrollStartFromIndex ?? 0)) *
+            _childHeight,
+        duration: duration,
+        curve: curve);
     _isScrolling = false;
   }
 
@@ -149,32 +157,40 @@ class _ScrollableIndexGridViewState extends State<ScrollableIndexGridView>
 
   @override
   Widget build(BuildContext context) {
-    return GridView.builder(
-      addAutomaticKeepAlives: widget.addAutomaticKeepAlives,
-      addRepaintBoundaries: widget.addRepaintBoundaries,
-      addSemanticIndexes: widget.addSemanticIndexes,
-      cacheExtent: widget.cacheExtent,
-      clipBehavior: widget.clipBehavior,
-      controller: _scrollController,
-      dragStartBehavior: widget.dragStartBehavior,
-      findChildIndexCallback: widget.findChildIndexCallback,
-      itemCount: widget.itemCount,
-      keyboardDismissBehavior: widget.keyboardDismissBehavior,
-      padding: widget.padding,
-      physics: widget.physics,
-      primary: widget.primary,
-      restorationId: widget.restorationId,
-      reverse: widget.reverse,
-      scrollDirection: widget.scrollDirection,
-      semanticChildCount: widget.semanticChildCount,
-      shrinkWrap: widget.shrinkWrap,
-      gridDelegate: widget.gridDelegate,
-      itemBuilder: (context, index) {
-        return SizedBox(
-          key: index == 0 ? _childHeightKey : null,
-          child: widget.itemBuilder(context, index),
-        );
+    return NotificationListener<OverscrollIndicatorNotification>(
+      onNotification: (overscroll) {
+        overscroll.disallowIndicator();
+        return true;
       },
+      child: GridView.builder(
+        addAutomaticKeepAlives: widget.addAutomaticKeepAlives,
+        addRepaintBoundaries: widget.addRepaintBoundaries,
+        addSemanticIndexes: widget.addSemanticIndexes,
+        cacheExtent: widget.cacheExtent,
+        clipBehavior: widget.clipBehavior,
+        controller: _scrollController,
+        dragStartBehavior: widget.dragStartBehavior,
+        findChildIndexCallback: widget.findChildIndexCallback,
+        itemCount: widget.itemCount,
+        keyboardDismissBehavior: widget.keyboardDismissBehavior,
+        padding: widget.padding,
+        physics: widget.physics,
+        primary: widget.primary,
+        restorationId: widget.restorationId,
+        reverse: widget.reverse,
+        scrollDirection: widget.scrollDirection,
+        semanticChildCount: widget.semanticChildCount,
+        shrinkWrap: widget.shrinkWrap,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: widget.crossAxisCount,
+            childAspectRatio: widget.childAspectRatio),
+        itemBuilder: (context, index) {
+          return SizedBox(
+            key: index == 0 ? _childHeightKey : null,
+            child: widget.itemBuilder(context, index),
+          );
+        },
+      ),
     );
   }
 }
@@ -195,7 +211,6 @@ class IndexScrollController {
     Curve curve = Curves.linear,
     List<double> opacityAnimationWeights = const [40, 20, 40],
   }) {
-    
     assert(duration > Duration.zero);
     return _scrollableListState!._scrollTo(
       index: index,
